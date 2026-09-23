@@ -8,6 +8,13 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "halovera-command-db",
+      "database_id": "3425e88e-bf86-41c5-a584-0edf21de67f3"
+    }
+  ],
   "observability": {
     "enabled": true
   }
