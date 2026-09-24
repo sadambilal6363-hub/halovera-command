@@ -36,7 +36,7 @@ export async function POST(request, { params }) {
         return Response.json({ error: 'حالة واتساب جاهزة للنسخ؛ انشرها من تحديثات تطبيق واتساب أعمال. لا يوجد نشر آلي رسمي للحالة هنا.' }, { status: 409 });
       if (draft.channel !== 'whatsapp_message')
         return Response.json({ error: 'قناة النشر غير مربوطة بعد؛ المسودة معتمدة ولم تُنشر' }, { status: 409 });
-      if (!input.consentConfirmed) return Response.json({ error: 'أكد موافقة العميل على تلقي هذا العرض' }, { status: 400 });
+      if (!input.consentConfirmed) return Response.json({ error: 'أكد أن العميل طلب العرض، أو أنه وافق على تلقي عروض هلوفيرا' }, { status: 400 });
       if (!env.WHATSAPP_ACCESS_TOKEN || !env.WHATSAPP_PHONE_NUMBER_ID)
         return Response.json({ error: 'اربط رقم واتساب الحقيقي أولًا؛ لم تُرسل الرسالة' }, { status: 409 });
       const recent = await env.DB.prepare(`SELECT id FROM whatsapp_messages WHERE phone=? AND direction='in'
