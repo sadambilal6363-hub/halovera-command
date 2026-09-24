@@ -16,7 +16,9 @@ export async function GET(request, { params }) {
   try {
     const data = await context(request, params); if (data.error) return data.error;
     const { results } = await data.env.DB.prepare('SELECT id,direction,body,created_at FROM whatsapp_messages WHERE phone=? ORDER BY created_at DESC, rowid DESC LIMIT 100').bind(data.phone).all();
-    return response({ conversation: data.conversation, messages: (results || []).reverse() });
+    let suggestion = null;
+    try { suggestion = await data.env.DB.prepare('SELECT category,summary,draft,is_lead,needs_human,created_at FROM whatsapp_ai_suggestions WHERE phone=? ORDER BY created_at DESC, rowid DESC LIMIT 1').bind(data.phone).first(); } catch { /* Optional AI table is not created until enabled. */ }
+    return response({ conversation: data.conversation, messages: (results || []).reverse(), suggestion });
   } catch { return response({ error: 'Inbox unavailable' }, 503); }
 }
 export async function POST(request, { params }) {
