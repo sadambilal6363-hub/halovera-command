@@ -22,14 +22,16 @@ export async function POST(request) {
     if (!kinds.includes(input?.kind) || !channels.includes(input?.channel) ||
         typeof input.business_name !== 'string' || !input.business_name.trim() || input.business_name.length > 120 ||
         typeof input.brief !== 'string' || !input.brief.trim() || input.brief.length > 2500 ||
-        !['generate', 'manual'].includes(input.action)) return Response.json({ error: 'بيانات غير صالحة' }, { status: 400 });
+        !['generate', 'manual'].includes(input.action) ||
+        (input.channel === 'whatsapp_message' && !/^\d{6,20}$/.test(input.recipient || '')))
+      return Response.json({ error: 'بيانات غير صالحة؛ أدخل رقم العميل برمز الدولة دون علامة +' }, { status: 400 });
     const generated = input.action === 'generate' ? await generateDraft(input, env) : { title: input.title, body: input.body };
     const draft = { ...input, ...generated };
     if (!validDraft(draft)) return Response.json({ error: 'النص أو العنوان غير صالح' }, { status: 400 });
     await contentTables(env.DB);
     const id = crypto.randomUUID();
-    await env.DB.prepare(`INSERT INTO content_drafts(id,kind,channel,business_name,brief,title,body)
-      VALUES(?,?,?,?,?,?,?)`).bind(id, draft.kind, draft.channel, draft.business_name.trim(), draft.brief.trim(), draft.title.trim(), draft.body.trim()).run();
+    await env.DB.prepare(`INSERT INTO content_drafts(id,kind,channel,business_name,brief,recipient,title,body)
+      VALUES(?,?,?,?,?,?,?,?)`).bind(id, draft.kind, draft.channel, draft.business_name.trim(), draft.brief.trim(), draft.recipient || '', draft.title.trim(), draft.body.trim()).run();
     return Response.json({ id }, { status: 201 });
   } catch (error) {
     return Response.json({ error: error.message === 'AI is not configured' ? 'أضف إعداد الذكاء أولًا أو اكتب المسودة يدويًا' : 'تعذر تجهيز المسودة' }, { status: 503 });
