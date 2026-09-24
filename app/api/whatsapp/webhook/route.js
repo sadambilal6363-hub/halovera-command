@@ -1,31 +1,38 @@
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { handleIncoming, validMetaSignature } from "../../../../lib/whatsapp.mjs";
+
 export const runtime = "edge";
+export const dynamic = "force-dynamic";
+
+async function bindings() {
+  return (await getCloudflareContext({ async: true })).env;
+}
 
 export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const mode = searchParams.get("hub.mode");
-  const token = searchParams.get("hub.verify_token");
-  const challenge = searchParams.get("hub.challenge");
-
-  const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN;
-
-  if (mode === "subscribe" && token && verifyToken && token === verifyToken) {
-    return new Response(challenge || "", { status: 200 });
+  const params = new URL(request.url).searchParams;
+  const env = await bindings();
+  if (params.get("hub.mode") === "subscribe" && env.WHATSAPP_VERIFY_TOKEN &&
+      params.get("hub.verify_token") === env.WHATSAPP_VERIFY_TOKEN && params.has("hub.challenge")) {
+    return new Response(params.get("hub.challenge"), { status: 200 });
   }
-
   return new Response("Verification failed", { status: 403 });
 }
 
 export async function POST(request) {
+  const env = await bindings();
+  const raw = await request.text();
+  if (!(await validMetaSignature(raw, request.headers.get("x-hub-signature-256"), env.META_APP_SECRET))) {
+    return new Response("Invalid signature", { status: 403 });
+  }
+  let payload;
+  try { payload = JSON.parse(raw); }
+  catch { return new Response("Invalid JSON", { status: 400 }); }
+  if (env.WHATSAPP_AUTO_REPLY_ENABLED !== "true") return new Response("OK", { status: 200 });
   try {
-    const payload = await request.json();
-
-    // Meta requires a fast 200 response. Message parsing, D1 logging,
-    // rules and replies will be added after the phone/webhook is authorized.
-    console.log("WhatsApp webhook event", JSON.stringify(payload));
-
-    return Response.json({ received: true }, { status: 200 });
+    await handleIncoming(payload, env);
+    return new Response("OK", { status: 200 });
   } catch (error) {
-    console.error("WhatsApp webhook error", error);
-    return Response.json({ received: false }, { status: 200 });
+    console.error("WhatsApp processing failed", error);
+    return new Response("Retry", { status: 503 });
   }
 }
