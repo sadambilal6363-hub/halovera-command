@@ -1,5 +1,6 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import Link from "next/link";
+import Discoveries from './Discoveries';
 
 export const dynamic = "force-dynamic";
 
@@ -44,6 +45,7 @@ export default async function Page(){
     <section className="stats financeStats"><article><strong>{strong.length}</strong><span>فرص قوية 70+</span></article><article><strong>{review.length}</strong><span>تحتاج مراجعة 45–69</span></article><article><strong>{weak.length}</strong><span>ضعيفة أقل من 45</span></article></section>
     <section className="sectionHead"><div><span className="eyebrow">FILTERED</span><h2>الفرص مرتبة بالأولوية</h2></div><Link className="textBtn" href="/leads">إضافة فرصة</Link></section>
     <div className="tableCard">{radar.length?radar.map(x=><div className="row opportunityRow" key={x.id}><div><b>{x.business_name}</b><small>{[x.category,x.location].filter(Boolean).join(" — ")||"فرصة مسجلة"}</small><small>{x.reasons.slice(0,3).join(" • ")||"لا توجد مؤشرات كافية بعد"}</small></div><div><strong>{x.score}%</strong><small>{x.band}</small></div></div>):<div className="emptyState">لا توجد فرص مفتوحة بعد.</div>}</div>
+    <Discoveries />
     <section className="approvalBox"><div><span className="eyebrow">SEARCH RULE</span><h2>لن نتواصل مع كل ما نجده</h2><p>عند ربط البحث الخارجي، الفرص الضعيفة تُحفظ أو تُستبعد، والقوية فقط تنتقل إلى قائمة التواصل.</p></div><Link href="/automation">مركز التشغيل الآلي</Link></section>
   </main>
 }
